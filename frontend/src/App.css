@@ -1,0 +1,87 @@
+.app {
+  font-family: Arial, sans-serif;
+  padding: 24px;
+  background: #111827;
+  color: white;
+  min-height: 100vh;
+}
+
+h1 {
+  margin-bottom: 24px;
+}
+
+.content {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 800px;
+  height: 450px;
+  background: black;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+video {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 450px;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+.panel {
+  width: 280px;
+  background: #1f2937;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.panel h2 {
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+button,
+.file-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  text-align: center;
+  background: #2563eb;
+  color: white;
+}
+
+button:hover,
+.file-button:hover {
+  opacity: 0.9;
+}
+
+.file-button input {
+  display: none;
+}
+
+.error {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #7f1d1d;
+  color: white;
+}
