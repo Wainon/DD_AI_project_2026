@@ -50,10 +50,25 @@ function App() {
 
       setBall(data)
 
-      setTrajectory((prev) => [
-        ...prev.slice(-40),
-        { x: data.x, y: data.y }
-      ])
+      setTrajectory((prev) => {
+		const nextPoint = { x: data.x, y: data.y }
+
+		const lastPoint = prev[prev.length - 1]
+
+		// Убираем слишком резкие скачки, чтобы шлейф не превращался в "паутину"
+		if (lastPoint) {
+			const dx = nextPoint.x - lastPoint.x
+			const dy = nextPoint.y - lastPoint.y
+			const distance = Math.sqrt(dx * dx + dy * dy)
+
+			if (distance > 180) {
+			return [nextPoint]
+			}
+		}
+
+		// Меньше точек = короче шлейф
+		return [...prev.slice(-12), nextPoint]
+		})
     }
 
     ws.onerror = (event) => {
@@ -187,35 +202,67 @@ function App() {
   }
 
   const drawOverlay = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+	const canvas = canvasRef.current
+	if (!canvas) return
 
-    const ctx = canvas.getContext("2d")
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+	const ctx = canvas.getContext("2d")
+	ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    if (trajectory.length > 1) {
-      ctx.beginPath()
+	if (trajectory.length < 2) {
+		return
+	}
 
-      trajectory.forEach((point, index) => {
-        if (index === 0) {
-          ctx.moveTo(point.x, point.y)
-        } else {
-          ctx.lineTo(point.x, point.y)
-        }
-      })
+	// Рисуем короткий градиентный шлейф без красной точки
+	for (let i = 1; i < trajectory.length; i++) {
+		const prev = trajectory[i - 1]
+		const current = trajectory[i]
 
-      ctx.strokeStyle = "lime"
-      ctx.lineWidth = 3
-      ctx.stroke()
-    }
+		const progress = i / trajectory.length
 
-    if (ball) {
-      ctx.beginPath()
-      ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2)
-      ctx.fillStyle = "red"
-      ctx.fill()
-    }
-  }
+		// Чем ближе к текущей позиции, тем ярче
+		const alpha = 0.15 + progress * 0.85
+		const lineWidth = 2 + progress * 5
+
+		const gradient = ctx.createLinearGradient(
+		prev.x,
+		prev.y,
+		current.x,
+		current.y
+		)
+
+		gradient.addColorStop(0, `rgba(0, 255, 120, ${alpha * 0.25})`)
+		gradient.addColorStop(1, `rgba(0, 255, 40, ${alpha})`)
+
+		ctx.beginPath()
+		ctx.moveTo(prev.x, prev.y)
+		ctx.lineTo(current.x, current.y)
+		ctx.strokeStyle = gradient
+		ctx.lineWidth = lineWidth
+		ctx.lineCap = "round"
+		ctx.lineJoin = "round"
+		ctx.stroke()
+	}
+
+	// Небольшое свечение в конце шлейфа, но без красной точки
+	const last = trajectory[trajectory.length - 1]
+
+	const glow = ctx.createRadialGradient(
+		last.x,
+		last.y,
+		0,
+		last.x,
+		last.y,
+		18
+	)
+
+	glow.addColorStop(0, "rgba(0, 255, 80, 0.75)")
+	glow.addColorStop(1, "rgba(0, 255, 80, 0)")
+
+	ctx.beginPath()
+	ctx.arc(last.x, last.y, 18, 0, Math.PI * 2)
+	ctx.fillStyle = glow
+	ctx.fill()
+	}
 
   return (
     <div className="app">
@@ -250,18 +297,18 @@ function App() {
         </div>
 
         <div className="panel">
-          <h2>Source</h2>
+          <h2>Источник</h2>
 
           <button onClick={startWebcam}>
-            Webcam
+            Веб-камера
           </button>
 
           <button onClick={startScreenCapture}>
-            Screen / Window
+            Захват экрана
           </button>
 
           <label className="file-button">
-            Video file
+            Видео файл
             <input
               type="file"
               accept="video/*"
@@ -269,22 +316,22 @@ function App() {
             />
           </label>
 
-          <h2>Detection</h2>
+          <h2>Детекция</h2>
 
           <button onClick={() => setIsRunning(true)}>
-            Start detection
+            Начать детекцию
           </button>
 
           <button onClick={() => setIsRunning(false)}>
-            Stop detection
+            Остановить детекцию
           </button>
 
-          <h2>Statistics</h2>
+          <h2>Статистика</h2>
 
-          <p>Status: {status}</p>
-          <p>Source: {videoSource}</p>
-          <p>Speed: {ball?.speed ?? 0} km/h</p>
-          <p>Confidence: {ball?.confidence ?? 0}</p>
+          <p>Статус: {status}</p>
+          <p>Источник: {videoSource}</p>
+          <p>Скорость: {ball?.speed ?? 0} km/h</p>
+          <p>Уверенность: {ball?.confidence ?? 0}</p>
           <p>X: {ball?.x ?? "-"}</p>
           <p>Y: {ball?.y ?? "-"}</p>
         </div>
